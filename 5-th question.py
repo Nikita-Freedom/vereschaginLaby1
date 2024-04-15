@@ -25,10 +25,10 @@ def load_csv(filepath):
 def convert_types(data):
     converted_data = []
     invalid_data_log = []
-    pattern = re.compile(r'^\d*\.?\d*$')
+    pattern = re.compile(r'^\d*\.?\d*$')  # Проверка на числовые значения
 
     for record in data:
-        amount_str = record['amount'].replace(',', '.')  # European format
+        amount_str = record['amount'].replace(',', '.')  # Замена запятых на точки для европейского формата
         if pattern.match(amount_str):
             try:
                 record['amount'] = float(amount_str)
