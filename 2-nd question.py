@@ -57,7 +57,7 @@ def reduce_transactions_by_sender(mapped_data):
 if __name__ == "__main__":
     filepath = 'C:/Users/Nikitaa/PycharmProjects/vereschaginLaby/Synthetic_Financial_datasets_log.csv'
     data = load_csv(filepath)
-    data = convert_types(data)  # Можно опустить, если типы данных не важны
+    data = convert_types(data)
     mapped_data = map_transactions_by_sender(data)
     result = reduce_transactions_by_sender(mapped_data)
     print(result)

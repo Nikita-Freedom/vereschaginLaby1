@@ -1,6 +1,6 @@
 # ВОПРОС 3
 # 3. Средняя сумма транзакции по каждому типу операции.
-# Такой вопрос поможет выявить, для каких операций характерны наибольшие денежные переводы.
+# Поможет выявить, для каких операций характерны наибольшие денежные переводы.
 
 def load_csv(filepath):
     data = []
@@ -49,10 +49,15 @@ def reduce_average_transaction_amount(mapped_data):
     average_data = {key: sum_data[key] / count_data[key] for key in sum_data}
     return average_data
 
+def format_currency(value):
+    return f"${value:,.2f}"  # Форматирует число как денежное значение в долларах, с двумя десятичными знаками и разделителями тысяч
+
 if __name__ == "__main__":
     filepath = 'C:/Users/Nikitaa/PycharmProjects/vereschaginLaby/Synthetic_Financial_datasets_log.csv'
     data = load_csv(filepath)
     data = convert_types(data)
     mapped_data = map_average_transaction_amount(data)
     result = reduce_average_transaction_amount(mapped_data)
-    print(result)
+
+    formatted_result = {key: format_currency(value) for key, value in result.items()}
+    print(formatted_result)

@@ -1,6 +1,6 @@
 # ВОПРОС 1
 # 1. Общая сумма транзакций по каждому типу операции.
-# Этот вопрос поможет понять, какие типы операций наиболее популярны с точки зрения оборота денежных средств.
+# Поможет понять, какие типы операций наиболее популярны с точки зрения оборота денежных средств.
 
 import re
 import json
@@ -56,6 +56,8 @@ def reduce_transactions_by_type(mapped_data):
         reduced_data[key] = reduced_data.get(key, 0) + value
     return reduced_data
 
+def format_currency(value):
+    return f"${value:,.2f}"
 
 if __name__ == "__main__":
     filepath = 'C:/Users/Nikitaa/PycharmProjects/vereschaginLaby/Synthetic_Financial_datasets_log.csv'
@@ -63,4 +65,6 @@ if __name__ == "__main__":
     data = convert_types(data)
     mapped_data = map_transactions_by_type(data)
     result = reduce_transactions_by_type(mapped_data)
-    print(result)
+
+    formatted_result = {key: format_currency(value) for key, value in result.items()}
+    print(formatted_result)
