@@ -1,85 +1,84 @@
-# ВОПРОС 1
-# 1. Общая сумма транзакций по каждому типу операции.
-# Поможет понять, какие типы операций наиболее популярны с точки зрения оборота денежных средств.
+# ВОПРОС 3
+# 3. Средняя сумма транзакции по каждому типу операции.
+# Поможет выявить, для каких операций характерны наибольшие денежные переводы.
 
-import re
-import json
-
-# Функция для загрузки данных из CSV файла
 def load_csv(filepath):
     data = []
     expected_columns = {'step', 'type', 'amount', 'nameOrig', 'oldbalanceOrg', 'newbalanceOrig', 'nameDest',
                         'oldbalanceDest', 'newbalanceDest', 'isFraud', 'isFlaggedFraud'}
     with open(filepath, 'r') as file:
-        headers = file.readline().strip().split(';')  # Чтение и разделение заголовков файла
+        headers = file.readline().strip().split(';')  # Читаем заголовки из первой строки файла
         header_set = set(headers)
         if not expected_columns.issubset(header_set):
-            raise ValueError("Some required columns are missing")  # Проверка наличия всех необходимых колонок
+            raise ValueError("Some required columns are missing")  # Проверка наличия всех нужных колонок
 
         for line in file:
-            values = line.strip().split(';')  # Разделение строк на значения
+            values = line.strip().split(';')  # Разбиваем каждую строку на элементы
             if len(values) == len(headers):
-                record = dict(zip(headers, values))  # Сопоставление заголовков с данными
-                data.append(record)  # Добавление записи в список данных
+                record = dict(zip(headers, values))  # Создаем словарь для каждой строки
+                data.append(record)  # Добавляем словарь в список данных
             else:
-                print("Skipping malformed line:", line)  # Пропуск поврежденных строк
+                print("Skipping malformed line:", line)  # Пропуск некорректных строк
     return data
 
-# Функция для конвертации типов данных в полях
 def convert_types(data):
     converted_data = []
-    invalid_data_log = []
-    pattern = re.compile(r'^\d*\.?\d*$')  # Паттерн для проверки числового формата
-
+    invalid_data_log = []  # Список для невалидных данных
     for record in data:
-        amount_str = record['amount'].replace(',', '.')  # Корректировка формата числа (запятые на точки)
-        if pattern.match(amount_str):
-            record['amount'] = float(amount_str)  # Преобразование строки в число
-            converted_data.append(record)  # Добавление корректно преобразованной записи
-        else:
-            invalid_data_log.append(record)  # Добавление некорректной записи в лог
-
-    with open('invalid_data_log.json', 'w') as log_file:
-        json.dump(invalid_data_log, log_file, ensure_ascii=False, indent=4)  # Сохранение лога в файл
-
+        try:
+            record['amount'] = float(record['amount'])  # Преобразуем строку суммы в число
+            converted_data.append(record)  # Добавляем запись в список конвертированных данных
+        except ValueError:
+            invalid_data_log.append(record)  # Добавляем запись в список невалидных данных
     print(f"Total invalid records skipped: {len(invalid_data_log)}")  # Вывод количества пропущенных записей
     return converted_data
 
-# Функция Map для группировки транзакций по типам и суммам
-def map_transactions_by_type(data):
-    return [(record['type'], record['amount']) for record in data]  # Создание списка кортежей (тип, сумма)
+def map_average_transaction_amount(data):
+    # Создаем кортежи (тип транзакции, (сумма, счетчик))
+    return [(record['type'], (record['amount'], 1)) for record in data]
 
-# Функция Reduce для подсчета общих сумм по каждому типу транзакций
-def reduce_transactions_by_type(mapped_data):
-    reduced_data = {}
+def reduce_average_transaction_amount(mapped_data):
+    sum_data = {}  # Словарь для сумм
+    count_data = {}  # Словарь для счетчиков
     for key, value in mapped_data:
-        reduced_data[key] = reduced_data.get(key, 0) + value  # Суммирование значений для каждого ключа
-    return reduced_data
+        if key not in sum_data:
+            sum_data[key] = 0  # Инициализация суммы
+            count_data[key] = 0  # Инициализация счетчика
+        sum_data[key] += value[0]  # Добавление суммы
+        count_data[key] += value[1]  # Инкремент счетчика
+    # Вычисляем среднее значение, деля сумму на количество
+    average_data = {key: sum_data[key] / count_data[key] for key in sum_data}
+    return average_data
 
-# Функция для форматирования суммы в денежный формат
 def format_currency(value):
+    # Форматирование числа в виде денежной суммы
     return f"${value:,.2f}"
 
 if __name__ == "__main__":
     filepath = 'C:/Users/Nikitaa/PycharmProjects/vereschaginLaby/Synthetic_Financial_datasets_log.csv'
-    data = load_csv(filepath)
-    data = convert_types(data)
-    mapped_data = map_transactions_by_type(data)
-    result = reduce_transactions_by_type(mapped_data)
+    data = load_csv(filepath)  # Загружаем данные
+    data = convert_types(data)  # Конвертируем типы данных
+    mapped_data = map_average_transaction_amount(data)  # Применяем Map функцию
+    result = reduce_average_transaction_amount(mapped_data)  # Применяем Reduce функцию
 
-    formatted_result = {key: format_currency(value) for key, value in result.items()}  # Форматирование и вывод результатов
-    print(formatted_result)
+    formatted_result = {key: format_currency(value) for key, value in result.items()}  # Форматируем результат
+    print(formatted_result)  # Выводим отформатированный результат
 
 """
 Как работает алгоритм MapReduce в этом случае:
 
-Map (map_transactions_by_type): Эта функция проходит по каждой записи в данных и создаёт кортежи, где первый элемент — 
-тип транзакции (type), а второй — сумма транзакции (amount). Это позволяет группировать данные по типу транзакции для последующего подсчета.
+Map (map_average_transaction_amount):
 
-Reduce (reduce_transactions_by_type): Функция Reduce берет все кортежи, созданные функцией Map, и агрегирует их по ключам (типам транзакций). 
-Для каждого типа транзакции суммируются все суммы, что позволяет получить общую сумму денежных средств, прошедших через каждый тип операции.
+Функция проходит по каждому элементу списка данных.
+Для каждой записи создается кортеж вида (тип транзакции, (сумма транзакции, 1)). 
+Второй элемент кортежа — это пара, где первый элемент — сумма транзакции, второй — счетчик транзакций (всегда равен 1),
+ который будет использоваться для подсчета количества транзакций каждого типа.
+ 
+Reduce (reduce_average_transaction_amount):
 
-Это типичный пример использования MapReduce для агрегации данных, где Map предназначен для создания структурированного вида данных, 
-а Reduce — для их суммирования по заданным критериям.
+Функция принимает список кортежей, созданных функцией Map.
+Использует два словаря (sum_data и count_data) для хранения промежуточных сумм и количества транзакций по каждому типу операции.
+Для каждого кортежа из списка, функция увеличивает сумму и счетчик в соответствующих словарях.
+После прохода по всем кортежам, функция вычисляет среднее значение для каждого типа операции, разделив общую сумму на количество транзакций.
 
 """
